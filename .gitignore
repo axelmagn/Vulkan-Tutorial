@@ -36,3 +36,4 @@ attachments/template/build/**
 build/**
 gemini-cli-telemetry.log
 .cache/
+/compile_commands.json

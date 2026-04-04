@@ -1,8 +1,0 @@
-[
-{
-  "directory": "C:/Users/Axel/workspace/study/vulkan/Vulkan-Tutorial/build",
-  "command": "C:\\PROGRA~1\\LLVM\\bin\\CLANG_~1.EXE -DGLFW_DLL -DVULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 -DVULKAN_HPP_HANDLE_ERROR_OUT_OF_DATE_AS_SUCCESS -DVULKAN_HPP_NO_STRUCT_CONSTRUCTORS=1 -isystem D:/opt/vcpkg/installed/x64-windows/include -isystem C:/VulkanSDK/1.4.335.0/include -O0 -std=gnu++20 -D_DEBUG -D_DLL -D_MT -Xclang --dependent-lib=msvcrtd -g -Xclang -gcodeview @CMakeFiles\\VulkanTutorial.dir\\main.cpp.obj.modmap -o CMakeFiles\\VulkanTutorial.dir\\main.cpp.obj -c C:\\Users\\Axel\\workspace\\study\\vulkan\\Vulkan-Tutorial\\main.cpp",
-  "file": "C:/Users/Axel/workspace/study/vulkan/Vulkan-Tutorial/main.cpp",
-  "output": "C:/Users/Axel/workspace/study/vulkan/Vulkan-Tutorial/build/CMakeFiles/VulkanTutorial.dir/main.cpp.obj"
-}
-]
