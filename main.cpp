@@ -44,6 +44,7 @@ class HelloTriangleApplication
 	vk::raii::Context                context;
 	vk::raii::Instance               instance       = nullptr;
 	vk::raii::DebugUtilsMessengerEXT debugMessenger = nullptr;
+	vk::raii::PhysicalDevice         physicalDevice = nullptr;
 
 	static VKAPI_ATTR vk::Bool32 VKAPI_CALL debugCallback(
 	    vk::DebugUtilsMessageSeverityFlagBitsEXT      severity,
@@ -70,6 +71,7 @@ class HelloTriangleApplication
 	{
 		createInstance();
 		setupDebugMessenger();
+		pickPhysicalDevice();
 	}
 
 	void createInstance()
@@ -153,6 +155,34 @@ class HelloTriangleApplication
 		                                                                      .messageType     = messageTypeFlags,
 		                                                                      .pfnUserCallback = &debugCallback};
 		debugMessenger = instance.createDebugUtilsMessengerEXT(debugUtilsMessengerCreateInfoEXT);
+	}
+
+	void pickPhysicalDevice()
+	{
+		auto physicalDevices = instance.enumeratePhysicalDevices();
+		if (physicalDevices.empty())
+		{
+			throw std::runtime_error("failed to find GPUs with Vulkan support!");
+		}
+		for (auto physicalDevice : physicalDevices)
+		{
+			// auto deviceProperties  = physicalDevice.getProperties();
+			// auto deviceFeatures    = physicalDevice.getFeatures();
+			bool supportsVulkan1_3 = physicalDevice.getProperties().apiVersion >= vk::ApiVersion13;
+			auto queueFamilies     = physicalDevice.getQueueFamilyProperties();
+			bool supportsGraphics =
+			    std::ranges::any_of(queueFamilies, [](auto const &qfp) { return !!(qfp.queueFlags & vk::QueueFlagBits::eGraphics); });
+
+			std::vector<const char *> requiredDeviceExtension = {vk::KHRSwapchainExtensionName};
+
+			auto availableDeviceExtensions = physicalDevice.enumerateDeviceExtensionProperties();
+			bool supportsAllRequiredExtensions =
+			    std::ranges::all_of(requiredDeviceExtension,
+			                        [&availableDeviceExtensions](auto const &requiredDeviceExtension) {
+				                        return std::ranges::any_of(availableDeviceExtensions,
+				                                                   [requiredDeviceExtension](auto const &availableDeviceExtension) { return strcmp(availableDeviceExtension.extensionName, requiredDeviceExtension) == 0; });
+			                        });
+		}
 	}
 
 	void mainLoop()
