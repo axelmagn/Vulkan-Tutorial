@@ -56,6 +56,11 @@ class HelloTriangleApplication
 	vk::raii::Device                 device         = nullptr;
 	vk::raii::Queue                  graphicsQueue  = nullptr;
 	vk::raii::SurfaceKHR             surface        = nullptr;
+	vk::raii::SwapchainKHR           swapChain      = nullptr;
+	std::vector<vk::Image>           swapChainImages;
+	vk::SurfaceFormatKHR             swapChainSurfaceFormat;
+	vk::Extent2D                     swapChainExtent;
+	std::vector<vk::raii::ImageView> swapChainImageViews;
 
 	std::vector<const char *> requiredDeviceExtension = {vk::KHRSwapchainExtensionName};
 
@@ -87,6 +92,8 @@ class HelloTriangleApplication
 		createSurface();
 		pickPhysicalDevice();
 		createLogicalDevice();
+		createSwapChain();
+		createImageViews();
 	}
 
 	void createInstance()
@@ -269,12 +276,33 @@ class HelloTriangleApplication
 
 	void createSwapChain()
 	{
-		auto                              surfaceCapabilities   = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
-		std::vector<vk::SurfaceFormatKHR> availableFormats      = physicalDevice.getSurfaceFormatsKHR(surface);
-		std::vector<vk::PresentModeKHR>   availablePresentModes = physicalDevice.getSurfacePresentModesKHR(surface);
+		vk::SurfaceCapabilitiesKHR      surfaceCapabilities   = physicalDevice.getSurfaceCapabilitiesKHR(*surface);
+		std::vector<vk::PresentModeKHR> availablePresentModes = physicalDevice.getSurfacePresentModesKHR(surface);
+		swapChainExtent                                       = chooseSwapExtent(surfaceCapabilities);
+		uint32_t minImageCount                                = chooseSwapMinImageCount(surfaceCapabilities);
+
+		std::vector<vk::SurfaceFormatKHR> availableFormats = physicalDevice.getSurfaceFormatsKHR(*surface);
+		swapChainSurfaceFormat                             = chooseSwapSurfaceFormat(availableFormats);
+
+		vk::SwapchainCreateInfoKHR swapChainCreateInfo{.surface          = *surface,
+		                                               .minImageCount    = minImageCount,
+		                                               .imageFormat      = swapChainSurfaceFormat.format,
+		                                               .imageColorSpace  = swapChainSurfaceFormat.colorSpace,
+		                                               .imageExtent      = swapChainExtent,
+		                                               .imageArrayLayers = 1,
+		                                               .imageUsage       = vk::ImageUsageFlagBits::eColorAttachment,
+		                                               .imageSharingMode = vk::SharingMode::eExclusive,
+		                                               .preTransform     = surfaceCapabilities.currentTransform,
+		                                               .compositeAlpha   = vk::CompositeAlphaFlagBitsKHR::eOpaque,
+		                                               .presentMode      = chooseSwapPresentMode(availablePresentModes),
+		                                               .clipped          = true};
+
+		swapChain       = vk::raii::SwapchainKHR(device, swapChainCreateInfo);
+		swapChainImages = swapChain.getImages();
 	}
 
-	vk::SurfaceFormatKHR chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
+	vk::SurfaceFormatKHR
+	    chooseSwapSurfaceFormat(const std::vector<vk::SurfaceFormatKHR> &availableFormats)
 	{
 		const auto formatIt = std::ranges::find_if(
 		    availableFormats,
@@ -296,7 +324,7 @@ class HelloTriangleApplication
 
 	vk::Extent2D chooseSwapExtent(vk::SurfaceCapabilitiesKHR const &capabilities)
 	{
-		uint32_t max_int = std::numeric_limits<uint32_t>::max();
+		uint32_t max_int = (std::numeric_limits<uint32_t>::max)();
 		if (capabilities.currentExtent.width != max_int)
 		{
 			return capabilities.currentExtent;
@@ -307,6 +335,32 @@ class HelloTriangleApplication
 		return {
 		    std::clamp<uint32_t>(width, capabilities.minImageExtent.width, capabilities.maxImageExtent.width),
 		    std::clamp<uint32_t>(height, capabilities.minImageExtent.height, capabilities.maxImageExtent.height)};
+	}
+
+	uint32_t chooseSwapMinImageCount(vk::SurfaceCapabilitiesKHR const &surfaceCapabilities)
+	{
+		auto minImageCount = (std::max) (3u, surfaceCapabilities.minImageCount);
+		if ((0 < surfaceCapabilities.maxImageCount) && (surfaceCapabilities.maxImageCount < minImageCount))
+		{
+			minImageCount = surfaceCapabilities.maxImageCount;
+		}
+		return minImageCount;
+	}
+
+	void createImageViews()
+	{
+		assert(swapChainImageViews.empty());
+
+		vk::ImageViewCreateInfo imageViewCreateInfo{
+		    .viewType         = vk::ImageViewType::e2D,
+		    .format           = swapChainSurfaceFormat.format,
+		    .subresourceRange = {vk::ImageAspectFlagBits::eColor, 0, 1, 0, 1}};
+
+		for (auto &image : swapChainImages)
+		{
+			imageViewCreateInfo.image = image;
+			swapChainImageViews.emplace_back(device, imageViewCreateInfo);
+		}
 	}
 
 	void mainLoop()
